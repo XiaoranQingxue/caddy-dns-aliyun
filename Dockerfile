@@ -1,8 +1,8 @@
 # Dockerfile
-ARG CADDY_VERSION=latest
+ARG CADDY_VERSION=2.8.4
 FROM caddy:${CADDY_VERSION}-builder AS builder
 
-# 国内网络拉依赖更稳定
+# 国内网络优化
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=off
 ENV CGO_ENABLED=0
