@@ -38,7 +38,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile   # 指定 Dockerfile
           push: true
           build-args: |
             CADDY_VERSION=${{ env.CADDY_VERSION }}
