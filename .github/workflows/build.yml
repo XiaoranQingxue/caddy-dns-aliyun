@@ -1,46 +1,17 @@
-name: Auto Build Caddy with Aliyun DNS
+# Dockerfile
+ARG CADDY_VERSION=2.8.4
+FROM caddy:${CADDY_VERSION}-builder AS builder
 
-on:
-  workflow_dispatch:        # 手动触发
-  schedule:
-    - cron: '0 3 * * *'     # 每天凌晨 UTC 3 点自动构建
+# 国内网络优化
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=off
+ENV CGO_ENABLED=0
 
-permissions:
-  contents: read
-  packages: write
+# 构建带 Aliyun DNS 插件的 Caddy
+RUN xcaddy build \
+    --with github.com/caddy-dns/aliyun \
+    --verbose
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Get latest Caddy version
-        id: caddy
-        run: |
-          latest=$(curl -s https://api.github.com/repos/caddyserver/caddy/releases/latest | jq -r .tag_name)
-          echo "CADDY_VERSION=${latest#v}" >> $GITHUB_ENV
-          echo "Latest Caddy version: $latest"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          build-args: |
-            CADDY_VERSION=${{ env.CADDY_VERSION }}
-          tags: |
-            ghcr.io/xiaoranqingxue/caddy-dns-aliyun:latest
-            ghcr.io/xiaoranqingxue/caddy-dns-aliyun:${{ env.CADDY_VERSION }}
+# 最终镜像
+FROM caddy:${CADDY_VERSION}
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy
